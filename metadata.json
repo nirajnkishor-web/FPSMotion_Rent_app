@@ -1,0 +1,12 @@
+{
+  "name": "Remix: FPS Motion",
+  "description": "Premium real estate rental and selling platform in India. Buy, rent, and list properties with ease.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "Firebase",
+    "AI Integration",
+    "Real-time Messaging"
+  ]
+}

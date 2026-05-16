@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile data stored in Firestore",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fullName", "email", "phone", "createdAt"]
+    },
+    "Booking": {
+      "title": "Appointment Booking",
+      "description": "Details of an appointment booked by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["visit", "video", "chat"] },
+        "date": { "type": "string", "format": "date-time" },
+        "slot": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "date", "slot", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User private profile data"
+    },
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "User appointment bookings"
+    }
+  }
+}

@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Help Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'fpsmotion@hotmail.com';
+    }
+
+    // Entity Validations
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'fullName', 'email', 'phone', 'createdAt']) &&
+             data.keys().size() == 5 &&
+             (data.userId == request.auth.uid || isAdmin()) &&
+             data.fullName is string && data.fullName.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.phone is string && data.phone.size() <= 20 &&
+             ((resource == null && data.createdAt == request.time) || (resource != null && data.createdAt == resource.data.createdAt));
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['userId', 'type', 'date', 'slot', 'status', 'createdAt']) &&
+             data.keys().size() == 6 &&
+             (data.userId == request.auth.uid || isAdmin()) &&
+             data.type in ['visit', 'video', 'chat'] &&
+             data.date is string &&
+             data.slot is string &&
+             data.status in ['pending', 'confirmed', 'cancelled'] &&
+             ((resource == null && data.createdAt == request.time) || (resource != null && data.createdAt == resource.data.createdAt));
+    }
+
+    function isValidListing(data) {
+      return data.keys().hasAll(['userId', 'title', 'category', 'type', 'city', 'locality', 'price', 'description', 'status', 'createdAt']) &&
+             data.keys().size() == 10 &&
+             (data.userId == request.auth.uid || isAdmin()) &&
+             data.title is string && data.title.size() <= 200 &&
+             data.category is string &&
+             data.type in ['Sale', 'Rent', 'PG', 'Commercial'] &&
+             data.city is string &&
+             data.locality is string &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             ((resource == null && data.createdAt == request.time) || (resource != null && data.createdAt == resource.data.createdAt));
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'phone']);
+    }
+
+    // 2. Bookings Collection
+    match /bookings/{bookingId} {
+      allow list, get: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if (isSignedIn() && incoming().userId == request.auth.uid && isValidBooking(incoming())) || isAdmin();
+      allow update: if ((isSignedIn() && existing().userId == request.auth.uid) || isAdmin()) && isValidBooking(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['type', 'date', 'slot', 'status', 'userId']);
+      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+    }
+
+    // 3. Listings Collection
+    match /listings/{listingId} {
+      allow read: if true; // Public can see active/approved listings, we might want to filter in client
+      allow create: if isSignedIn() && isValidListing(incoming());
+      allow update: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid && incoming().status == 'pending');
+      allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+    }
+  }
+}
