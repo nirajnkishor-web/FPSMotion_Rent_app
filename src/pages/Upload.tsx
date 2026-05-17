@@ -1,5 +1,22 @@
-import React, { useState } from 'react';
-import { Camera, Video, MapPin, IndianRupee, Layers, CheckCircle, ArrowLeft, ArrowRight, Loader2, Wand2, FileText, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Camera, Video, MapPin, IndianRupee, Layers, CheckCircle, ArrowLeft, ArrowRight, Loader2, Wand2, FileText, ShieldCheck, X, GripVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
@@ -9,6 +26,65 @@ import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
+interface ImageItem {
+  id: string;
+  file: File;
+  preview: string;
+}
+
+function SortableImageItem({ image, onRemove }: { image: ImageItem; onRemove: (id: string) => void; key?: React.Key }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: image.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : 1,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={cn(
+        "relative aspect-square rounded-3xl overflow-hidden border-2 transition-all",
+        isDragging ? "border-brand shadow-2xl scale-105 opacity-50" : "border-slate-100 shadow-sm"
+      )}
+    >
+      <img 
+        src={image.preview} 
+        alt="Preview" 
+        className="w-full h-full object-cover"
+      />
+      <div 
+        {...attributes} 
+        {...listeners}
+        className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 hover:opacity-100 cursor-grab active:cursor-grabbing"
+      >
+        <GripVertical className="w-6 h-6 text-white drop-shadow-lg" />
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(image.id);
+        }}
+        className="absolute top-2 right-2 w-8 h-8 bg-white/90 hover:bg-red-500 hover:text-white rounded-xl flex items-center justify-center text-slate-500 transition-all shadow-lg z-10"
+      >
+        <X className="w-4 h-4" />
+      </button>
+      <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/50 backdrop-blur-sm rounded-md text-[8px] font-black text-white uppercase tracking-widest">
+        Slot {image.id.slice(0, 3)}
+      </div>
+    </div>
+  );
+}
 
 export default function Upload() {
   const { user } = useAuth();
@@ -27,8 +103,64 @@ export default function Upload() {
     description: '',
     features: [] as string[],
     idProof: null as File | null,
-    images: [] as File[],
+    images: [] as ImageItem[],
   });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []) as File[];
+    if (files.length === 0) return;
+
+    const newImages: ImageItem[] = files.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+
+    setFormData(prev => ({
+      ...prev,
+      images: [...prev.images, ...newImages].slice(0, 10)
+    }));
+  };
+
+  const removeImage = (id: string) => {
+    setFormData(prev => {
+      const filtered = prev.images.filter(img => img.id !== id);
+      // Revoke the URL to avoid memory leaks
+      const removed = prev.images.find(img => img.id === id);
+      if (removed) URL.revokeObjectURL(removed.preview);
+      return { ...prev, images: filtered };
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setFormData(prev => {
+        const oldIndex = prev.images.findIndex(i => i.id === active.id);
+        const newIndex = prev.images.findIndex(i => i.id === over.id);
+        return {
+          ...prev,
+          images: arrayMove(prev.images, oldIndex, newIndex)
+        };
+      });
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      formData.images.forEach(img => URL.revokeObjectURL(img.preview));
+      if (formData.idProof) {
+        // We might want to revoke this too if it's a preview, but it's not currently used as a preview in a way that creates one
+      }
+    };
+  }, []);
 
   const handleAiDescription = async () => {
     if (!formData.title || !formData.category) {
@@ -77,6 +209,7 @@ export default function Upload() {
         locality: formData.locality,
         price: formData.price,
         description: formData.description,
+        imageCount: formData.images.length,
         status: 'pending',
         createdAt: serverTimestamp()
       });
@@ -264,14 +397,49 @@ export default function Upload() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-8 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center gap-3 hover:border-brand hover:bg-slate-50 transition-all cursor-pointer group">
-                      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 group-hover:scale-110 group-hover:bg-brand group-hover:text-slate-900 transition-all">
-                        <Camera className="w-6 h-6" />
+                  <div className="space-y-6">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Property Visuals <span className="text-slate-500 font-medium">(Drag to reorder)</span></label>
+                    
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <SortableContext 
+                          items={formData.images.map(i => i.id)}
+                          strategy={rectSortingStrategy}
+                        >
+                          {formData.images.map((image: ImageItem) => (
+                            <SortableImageItem 
+                              key={image.id} 
+                              image={image} 
+                              onRemove={removeImage} 
+                            />
+                          ))}
+                        </SortableContext>
+                        
+                        {formData.images.length < 10 && (
+                          <div 
+                            onClick={() => document.getElementById('photo-upload')?.click()}
+                            className="aspect-square border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-2 hover:border-brand hover:bg-slate-50 transition-all cursor-pointer group"
+                          >
+                            <input 
+                              id="photo-upload" 
+                              type="file" 
+                              multiple 
+                              accept="image/*" 
+                              className="hidden" 
+                              onChange={handleImageUpload} 
+                            />
+                            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 group-hover:scale-110 group-hover:bg-brand group-hover:text-slate-900 transition-all">
+                              <Camera className="w-5 h-5" />
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic text-center px-2">Add Photos</span>
+                          </div>
+                        )}
                       </div>
-                      <span className="text-sm font-bold text-slate-600 uppercase tracking-widest italic">Add Photos</span>
-                      <span className="text-[10px] text-slate-400 font-black">Up to 10 images</span>
-                    </div>
+                    </DndContext>
 
                     <div className="p-8 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center gap-3 hover:border-brand hover:bg-slate-50 transition-all cursor-pointer group">
                       <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 group-hover:scale-110 group-hover:bg-brand group-hover:text-slate-900 transition-all">

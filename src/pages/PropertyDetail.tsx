@@ -1,12 +1,26 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, IndianRupee, Home, Calendar, Phone, MessageSquare, Share2, Heart, ShieldCheck, ChevronRight, CheckCircle2, Video } from 'lucide-react';
+import { MapPin, IndianRupee, Home, Calendar, Phone, MessageSquare, Share2, Heart, ShieldCheck, ChevronRight, CheckCircle2, Video, Bed, Bath, Utensils, Zap, ArrowUpCircle, Car, Trees, Wind } from 'lucide-react';
 import { motion } from 'motion/react';
 import { COMPANY_DETAILS } from '../constants';
 import { formatCurrency } from '../lib/utils';
 
 export default function PropertyDetail() {
   const { id } = useParams();
+
+  const getFeatureIcon = (feature: string) => {
+    const f = feature.toLowerCase();
+    if (f.includes('bedroom')) return Bed;
+    if (f.includes('bathroom')) return Bath;
+    if (f.includes('kitchen')) return Utensils;
+    if (f.includes('lift')) return ArrowUpCircle;
+    if (f.includes('power') || f.includes('backup')) return Zap;
+    if (f.includes('security')) return ShieldCheck;
+    if (f.includes('parking')) return Car;
+    if (f.includes('park') || f.includes('view') || f.includes('garden')) return Trees;
+    if (f.includes('balcony') || f.includes('terrace')) return Wind;
+    return CheckCircle2;
+  };
 
   // Mock implementation for demo
   const property = {
@@ -19,7 +33,7 @@ export default function PropertyDetail() {
     locality: 'Kanke Road',
     address: 'Flat 402, Purnima Complex, Kanke, Ranchi, Jharkhand',
     description: 'Beautifully designed 3BHK flat with modern amenities. Located in a prime area with easy access to schools, hospitals, and markets. The property offers a breathtaking view of the Kanke Dam and ample ventilation.',
-    features: ['3 Bedrooms', '2 Bathrooms', '2 Balconies', 'Modular Kitchen', 'Lift Access', 'Power Backup', 'Security'],
+    features: ['3 Bedrooms', '2 Bathrooms', 'Modular Kitchen', 'Lift Access', 'Power Backup', 'Security', '2 Balconies', 'Park View', 'Reserved Parking'],
     images: [
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
       'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267',
@@ -104,14 +118,29 @@ export default function PropertyDetail() {
 
             {/* Features */}
             <div className="mb-16">
-              <h3 className="text-2xl font-bold text-slate-900 mb-6">Amenities & Features</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
-                {property.features.map(f => (
-                  <div key={f} className="flex items-center gap-3 text-slate-700">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span className="font-medium">{f}</span>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-bold text-slate-900 font-display">Amenities & Elite Features</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-brand uppercase tracking-[0.2em] italic bg-brand/5 px-4 py-2 rounded-full border border-brand/10">Premium Protocol</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {property.features.map(f => {
+                  const Icon = getFeatureIcon(f);
+                  return (
+                    <motion.div 
+                      key={f} 
+                      whileHover={{ y: -5 }}
+                      className="p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:border-brand/20 transition-all group"
+                    >
+                      <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-brand/10 group-hover:text-brand mb-4 transition-colors">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <p className="font-bold text-slate-900 text-sm italic group-hover:text-brand transition-colors tracking-tight">{f}</p>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Verified Feature</p>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
 
