@@ -16,7 +16,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Camera, Video, MapPin, IndianRupee, Layers, CheckCircle, ArrowLeft, ArrowRight, Loader2, Wand2, FileText, ShieldCheck, X, GripVertical } from 'lucide-react';
+import { Camera, Video, MapPin, IndianRupee, Layers, CheckCircle, ArrowLeft, ArrowRight, Loader2, Wand2, FileText, ShieldCheck, X, GripVertical, Shirt } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
@@ -102,6 +102,7 @@ export default function Upload() {
     price: '',
     description: '',
     features: [] as string[],
+    laundryService: false,
     idProof: null as File | null,
     images: [] as ImageItem[],
   });
@@ -209,6 +210,7 @@ export default function Upload() {
         locality: formData.locality,
         price: formData.price,
         description: formData.description,
+        laundryService: formData.laundryService,
         imageCount: formData.images.length,
         status: 'pending',
         createdAt: serverTimestamp()
@@ -322,6 +324,35 @@ export default function Upload() {
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-900"
                     placeholder="e.g. Kanke Road"
                   />
+                </div>
+
+                <div className="col-span-full">
+                  <div 
+                    onClick={() => setFormData(prev => ({ ...prev, laundryService: !prev.laundryService }))}
+                    className={cn(
+                      "flex items-center justify-between p-6 rounded-[2rem] border-2 transition-all cursor-pointer",
+                      formData.laundryService ? "border-brand bg-brand/5 shadow-lg shadow-brand/5" : "border-slate-100 bg-slate-50 hover:border-slate-200"
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
+                        formData.laundryService ? "bg-brand text-slate-900" : "bg-slate-200 text-slate-400"
+                      )}>
+                        <Shirt className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 uppercase italic tracking-tight">Elite Laundry Service</p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Complimentary or add-on laundry protocol</p>
+                      </div>
+                    </div>
+                    <div className={cn(
+                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                      formData.laundryService ? "border-brand bg-brand" : "border-slate-300"
+                    )}>
+                      {formData.laundryService && <CheckCircle className="w-4 h-4 text-slate-900" />}
+                    </div>
+                  </div>
                 </div>
               </div>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, IndianRupee, Home, Calendar, Phone, MessageSquare, Share2, Heart, ShieldCheck, ChevronRight, CheckCircle2, Video, Bed, Bath, Utensils, Zap, ArrowUpCircle, Car, Trees, Wind } from 'lucide-react';
+import { MapPin, IndianRupee, Home, Calendar, Phone, MessageSquare, Share2, Heart, ShieldCheck, ChevronRight, CheckCircle2, Video, Bed, Bath, Utensils, Zap, ArrowUpCircle, Car, Trees, Wind, Shirt } from 'lucide-react';
 import { motion } from 'motion/react';
 import { COMPANY_DETAILS } from '../constants';
 import { formatCurrency } from '../lib/utils';
@@ -19,6 +19,7 @@ export default function PropertyDetail() {
     if (f.includes('parking')) return Car;
     if (f.includes('park') || f.includes('view') || f.includes('garden')) return Trees;
     if (f.includes('balcony') || f.includes('terrace')) return Wind;
+    if (f.includes('laundry') || f.includes('washing')) return Shirt;
     return CheckCircle2;
   };
 

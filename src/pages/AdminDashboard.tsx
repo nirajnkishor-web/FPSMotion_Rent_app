@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Users, Building2, Calendar, LayoutDashboard, Search, Filter, CheckCircle, XCircle, MoreVertical, TrendingUp, AlertCircle, Loader2, Plus, ArrowRight, Trash2, LogOut } from 'lucide-react';
+import { ShieldCheck, Users, Building2, Calendar, LayoutDashboard, Search, Filter, CheckCircle, XCircle, MoreVertical, TrendingUp, AlertCircle, Loader2, Plus, ArrowRight, Trash2, LogOut, Shirt } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -27,6 +27,7 @@ interface Listing {
   locality: string;
   price: string;
   description: string;
+  laundryService?: boolean;
   status: string;
   createdAt: any;
 }
@@ -535,6 +536,7 @@ export default function AdminDashboard() {
                       <tr>
                         <th className="px-8 py-5">Property Details</th>
                         <th className="px-8 py-5">Owner</th>
+                        <th className="px-8 py-5">Laundry</th>
                         <th className="px-8 py-5">Valuation</th>
                         <th className="px-8 py-5">Status</th>
                         <th className="px-8 py-5 text-center">Admin Protocol</th>
@@ -559,6 +561,16 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-8 py-6 text-xs text-slate-400 italic">
                               {userDetails?.fullName || 'Unknown Owner'}
+                            </td>
+                            <td className="px-8 py-6">
+                              {listing.laundryService ? (
+                                <div className="flex items-center gap-2 text-brand">
+                                  <Shirt className="w-4 h-4" />
+                                  <span className="text-[10px] font-black uppercase italic tracking-widest">Active</span>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-slate-600 font-bold uppercase italic tracking-widest">None</span>
+                              )}
                             </td>
                             <td className="px-8 py-6 font-black text-white italic text-sm">
                               ₹{listing.price}
